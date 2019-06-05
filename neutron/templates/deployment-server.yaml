@@ -14,15 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- define "serverReadinessProbeTemplate" }}
-tcpSocket:
-  port: {{ tuple "network" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-{{- end }}
-{{- define "serverLivenessProbeTemplate" }}
-tcpSocket:
-  port: {{ tuple "network" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-{{- end }}
-
 {{- if .Values.manifests.deployment_server }}
 {{- $envAll := . }}
 
@@ -58,7 +49,7 @@ spec:
         configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
         configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
-{{ dict "envAll" $envAll "application" "neutron_server" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
+{{ dict "envAll" $envAll "application" "neutron" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
       serviceAccountName: {{ $serviceAccountName }}
       affinity:
 {{ tuple $envAll "neutron" "server" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
@@ -73,7 +64,7 @@ spec:
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.server | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           securityContext:
-            runAsUser: {{ .Values.pod.security_context.neutron_server.pod.runAsUser }}
+            runAsUser: {{ .Values.pod.user.neutron.uid }}
           env:
             - name: OPENSTACK_VERSION
               value: "{{ .Values.conf.openstack_version }}"
@@ -85,9 +76,8 @@ spec:
         - name: neutron-server
 {{ tuple $envAll "neutron_server" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.server | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
-{{ dict "envAll" $envAll "application" "neutron_server" "container" "neutron_server" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
-{{ dict "envAll" $envAll "component" "server" "container" "server" "type" "readiness" "probeTemplate" (include "serverReadinessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
-{{ dict "envAll" $envAll "component" "server" "container" "server" "type" "liveness" "probeTemplate" (include "serverLivenessProbeTemplate" $envAll | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
+          securityContext:
+            allowPrivilegeEscalation: false
           command:
             - /tmp/neutron-server.sh
             - start
@@ -100,6 +90,13 @@ spec:
           ports:
             - name: q-api
               containerPort: {{ tuple "network" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ tuple "network" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ tuple "network" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 60
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
@@ -111,12 +108,10 @@ spec:
               mountPath: /etc/neutron/neutron.conf
               subPath: neutron.conf
               readOnly: true
-            {{- if .Values.conf.neutron.DEFAULT.log_config_append }}
             - name: neutron-etc
               mountPath: {{ .Values.conf.neutron.DEFAULT.log_config_append }}
               subPath: {{ base .Values.conf.neutron.DEFAULT.log_config_append }}
               readOnly: true
-            {{- end }}
             - name: neutron-etc
               mountPath: /etc/neutron/api_audit_map.conf
               subPath: api_audit_map.conf
@@ -148,12 +143,6 @@ spec:
             - name: neutron-etc
               mountPath: /etc/neutron/taas_plugin.ini
               subPath: taas_plugin.ini
-              readOnly: true
-            {{ end }}
-            {{- if .Values.conf.plugins.l2gateway }}
-            - name: neutron-etc
-              mountPath: /etc/neutron/l2gw_plugin.ini
-              subPath: l2gw_plugin.ini
               readOnly: true
             {{ end }}
             - name: neutron-etc
