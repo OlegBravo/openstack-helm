@@ -63,6 +63,16 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.engine.timeout | default "30" }}
       initContainers:
 {{ tuple $envAll "engine" $mounts_heat_engine_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      {{- if .Values.conf.heat.clients_contrail }}
+        - name: tf-heat-init
+          image: {{ .Values.images.tags.opencontrail_heat_init }}
+          imagePullPolicy: {{ .Values.images.pull_policy }}
+          securityContext:
+            runAsUser: {{ .Values.pod.user.heat.uid }}
+          volumeMounts:
+            - name: heat-plugin-shared
+              mountPath: /opt/plugin
+      {{- end }}
       containers:
         - name: heat-engine
 {{ tuple $envAll "heat_engine" | include "helm-toolkit.snippets.image" | indent 10 }}
