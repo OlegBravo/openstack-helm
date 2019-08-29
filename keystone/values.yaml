@@ -1198,10 +1198,10 @@ endpoints:
     auth:
       admin:
         username: root
-        password: password
+        password: password123
       keystone:
         username: keystone
-        password: password
+        password: password123
     hosts:
       default: mariadb
     host_fqdn_override:
@@ -1216,10 +1216,10 @@ endpoints:
     auth:
       admin:
         username: rabbitmq
-        password: password
+        password: password123
       keystone:
         username: keystone
-        password: password
+        password: password123
     statefulset:
       replicas: 2
       name: rabbitmq-rabbitmq

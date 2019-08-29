@@ -27,7 +27,7 @@ conf:
       ldap:
         url: "ldap://ldap.openstack.svc.cluster.local:389"
         user: "cn=admin,dc=cluster,dc=local"
-        password: password
+        password: password123
         suffix: "dc=cluster,dc=local"
         user_attribute_ignore: "enabled,email,tenants,default_project_id"
         query_scope: sub
