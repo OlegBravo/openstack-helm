@@ -1157,7 +1157,7 @@ endpoints:
       admin:
         region_name: RegionOne
         username: admin
-        password: password
+        password: password123
         project_name: admin
         user_domain_name: default
         project_domain_name: default
@@ -1166,7 +1166,7 @@ endpoints:
         role: admin
         region_name: RegionOne
         username: keystone-test
-        password: password
+        password: password123
         project_name: test
         user_domain_name: default
         project_domain_name: default
