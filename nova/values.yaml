@@ -229,6 +229,27 @@ dependencies:
       tungstenfabric:
         compute:
           pod: []
+      openvswitch:
+        compute:
+          pod:
+            - requireSameNode: true
+              labels:
+                application: neutron
+                component: neutron-ovs-agent
+      linuxbridge:
+        compute:
+          pod:
+            - requireSameNode: true
+              labels:
+                application: neutron
+                component: neutron-lb-agent
+      sriov:
+        compute:
+          pod:
+            - requireSameNode: true
+              labels:
+                application: neutron
+                component: neutron-sriov-agent
   static:
     api:
       jobs:
