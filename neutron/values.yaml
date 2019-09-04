@@ -142,9 +142,7 @@ dependencies:
           - endpoint: node
             service: local_image_registry
     targeted:
-      tungstenfabric:
-        server:
-          daemonset: []
+      tungstenfabric: {}
       sriov: {}
       l2gateway: {}
       bagpipe_bgp: {}
