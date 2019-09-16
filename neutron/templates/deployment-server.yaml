@@ -73,7 +73,7 @@ spec:
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.server | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           securityContext:
-            runAsUser: {{ .Values.pod.security_context.neutron_server.pod.runAsUser }}
+            runAsUser: {{ .Values.pod.user.neutron.uid }}
           env:
             - name: OPENSTACK_VERSION
               value: "{{ .Values.conf.openstack_version }}"
@@ -103,6 +103,8 @@ spec:
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
+            - name: pod-var-neutron
+              mountPath: {{ .Values.conf.neutron.DEFAULT.state_path }}
             - name: neutron-bin
               mountPath: /tmp/neutron-server.sh
               subPath: neutron-server.sh
@@ -167,6 +169,8 @@ spec:
 {{ if $mounts_neutron_server.volumeMounts }}{{ toYaml $mounts_neutron_server.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp
+          emptyDir: {}
+        - name: pod-var-neutron
           emptyDir: {}
         - name: neutron-bin
           configMap:

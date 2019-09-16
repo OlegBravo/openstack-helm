@@ -170,6 +170,35 @@ just set it along with nova_metadata_host.
 {{- $_ := set .Values.conf.logging "formatter_fluent" $formatter_fluent -}}
 {{- end -}}
 
+{{- if .Values.conf.ovs_dpdk.enabled -}}
+{{- $_ := set $envAll.Values.conf.plugins.openvswitch_agent.ovs "datapath_type" "netdev" -}}
+{{- if empty $envAll.Values.conf.plugins.openvswitch_agent.ovs.vhostuser_socket_dir -}}
+{{- $_ := set $envAll.Values.conf.plugins.openvswitch_agent.ovs "vhostuser_socket_dir" "/run/openvswitch/vhostuser" -}}
+{{- end -}}
+{{- end -}}
+
+{{/* Designate DNS driver */}}
+{{- if eq (.Values.conf.neutron.DEFAULT.external_dns_driver | default "") "designate" -}}
+{{- if empty .Values.conf.neutron.designate.project_name -}}
+{{- $_ := set .Values.conf.neutron.designate "project_name" .Values.endpoints.identity.auth.designate.project_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.designate.project_domain_name -}}
+{{- $_ := set .Values.conf.neutron.designate "project_domain_name" .Values.endpoints.identity.auth.designate.project_domain_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.designate.user_domain_name -}}
+{{- $_ := set .Values.conf.neutron.designate "user_domain_name" .Values.endpoints.identity.auth.designate.user_domain_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.designate.username -}}
+{{- $_ := set .Values.conf.neutron.designate "username" .Values.endpoints.identity.auth.designate.username -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.designate.password -}}
+{{- $_ := set .Values.conf.neutron.designate "password" .Values.endpoints.identity.auth.designate.password -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.designate.url -}}
+{{- $_ := tuple "dns" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.neutron.designate "url" -}}
+{{- end -}}
+{{- end }}
+
 {{- if ( has "tungstenfabric" $envAll.Values.network.backend ) -}}
 {{- if empty $envAll.Values.conf.plugins.tungstenfabric.KEYSTONE.auth_url -}}
 {{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set $envAll.Values.conf.plugins.tungstenfabric.KEYSTONE "auth_url" -}}
@@ -214,10 +243,12 @@ data:
   l2gw_agent.ini: {{ default "\"\"" (include "helm-toolkit.utils.to_oslo_conf" .Values.conf.l2gateway_agent | b64enc) }}
   bagpipe_bgp.conf: {{ default "\"\"" (include "helm-toolkit.utils.to_oslo_conf" .Values.conf.bagpipe_bgp | b64enc) }}
   tf_plugin.ini: {{ include "helm-toolkit.utils.to_oslo_conf" $envAll.Values.conf.plugins.tungstenfabric | b64enc }}
+  tf_plugin.ini: {{ include "helm-toolkit.utils.to_oslo_conf" $envAll.Values.conf.plugins.tungstenfabric | b64enc }}
   dnsmasq.conf: ""
   neutron_sudoers: {{ $envAll.Values.conf.neutron_sudoers | b64enc }}
   rootwrap.conf: {{ $envAll.Values.conf.rootwrap | b64enc }}
   auto_bridge_add: {{ toJson $envAll.Values.conf.auto_bridge_add | b64enc }}
+  dpdk.conf: {{ toJson $envAll.Values.conf.ovs_dpdk | b64enc }}
 {{- range $key, $value := $envAll.Values.conf.rootwrap_filters }}
 {{- $filePrefix := replace "_" "-"  $key }}
   {{ printf "%s.filters" $filePrefix }}: {{ $value.content | b64enc }}

@@ -16,10 +16,12 @@
 set -xe
 
 # Assign IP address to br-ex
-OSH_BR_EX_ADDR="172.24.4.1/24"
-OSH_EXT_SUBNET="172.24.4.0/24"
+: ${OSH_EXT_SUBNET:="172.24.4.0/24"}
+: ${OSH_BR_EX_ADDR:="172.24.4.1/24"}
 sudo ip addr add ${OSH_BR_EX_ADDR} dev br-ex
 sudo ip link set br-ex up
+
+: ${DNSMASQ_IMAGE:=docker.io/openstackhelm/neutron:ocata}
 
 # NOTE(portdirect): With Docker >= 1.13.1 the default FORWARD chain policy is
 # configured to DROP, for the l3 agent to function as expected and for
@@ -37,7 +39,7 @@ sudo docker run -d \
   --cap-add=NET_ADMIN \
   --volume /etc/kubernetes/kubelet-resolv.conf:/etc/kubernetes/kubelet-resolv.conf:ro \
   --entrypoint dnsmasq \
-  docker.io/openstackhelm/neutron:ocata \
+  ${DNSMASQ_IMAGE} \
     --keep-in-foreground \
     --no-hosts \
     --bind-interfaces \

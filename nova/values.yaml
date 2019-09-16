@@ -2281,6 +2281,8 @@ pod:
       nova_db_sync:
         volumeMounts:
         volumes:
+  useHostNetwork:
+    novncproxy: true
   replicas:
     api_metadata: 1
     compute_ironic: 1
