@@ -182,8 +182,6 @@ spec:
           volumeMounts:
             - name: tf-plugin-shared
               mountPath: /opt/plugin
-              # TO-DO: Fix vif-plug-vrouter driver to detect executable dirs path
-              # from rootwrap conf
             - name: tf-plugin-bin
               mountPath: /opt/plugin/bin
         {{- end }}
@@ -329,8 +327,6 @@ spec:
             - name: tf-plugin-shared
               mountPath: /opt/plugin
               readOnly: true
-            # TO-DO: Fix vif-plug-vrouter driver to detect executable dirs path
-            # from rootwrap conf
             - name: tf-plugin-bin
               mountPath: /usr/sbin
               readOnly: true
@@ -426,8 +422,6 @@ spec:
         {{- if ( has "tungstenfabric" .Values.network.backend ) }}
         - name: tf-plugin-shared
           emptyDir: {}
-          # TO-DO: Fix vif-plug-vrouter driver to detect executable dirs path
-          # from rootwrap conf
         - name: tf-plugin-bin
           emptyDir: {}
         {{- end }}
