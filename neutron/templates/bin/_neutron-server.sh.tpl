@@ -22,7 +22,7 @@ COMMAND="${@:-start}"
 function start () {
   exec neutron-server \
         --config-file /etc/neutron/neutron.conf \
-{{- if ( has "tungstenfabric" .Values.network.backend ) }}
+{{- if ( has "tungstenfabric" .Values.network.backend ) }} \
         --config-file /etc/neutron/plugins/tungstenfabric/tf_plugin.ini
 {{- else }}
         --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
