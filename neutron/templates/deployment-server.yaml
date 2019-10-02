@@ -73,7 +73,7 @@ spec:
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.server | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           securityContext:
-            runAsUser: {{ .Values.pod.user.neutron.uid }}
+            runAsUser: {{ .Values.pod.security_context.neutron_server.pod.runAsUser }}
           env:
             - name: OPENSTACK_VERSION
               value: "{{ .Values.conf.openstack_version }}"
