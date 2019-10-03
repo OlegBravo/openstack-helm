@@ -23,7 +23,7 @@ exec neutron-openvswitch-agent \
   --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
 {{- if .Values.conf.plugins.openvswitch_agent.agent.tunnel_types }} \
   --config-file /tmp/pod-shared/ml2-local-ip.ini
-{{- end }}
+{{- end }} \
   --config-file /etc/neutron/plugins/ml2/openvswitch_agent.ini
 {{- if .Values.conf.plugins.taas.taas.enabled }} \
   --config-file /etc/neutron/plugins/ml2/taas.ini

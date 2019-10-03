@@ -23,6 +23,7 @@ images:
   tags:
     bootstrap: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
     test: docker.io/xrally/xrally-openstack:1.3.0
+    purge_test: docker.io/openstackhelm/ospurge:latest
     db_init: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
     neutron_db_sync: docker.io/openstackhelm/neutron:ocata-ubuntu_xenial
     db_drop: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
@@ -40,6 +41,7 @@ images:
     neutron_sriov_agent: docker.io/openstackhelm/neutron:ocata-18.04-sriov
     neutron_sriov_agent_init: docker.io/openstackhelm/neutron:ocata-18.04-sriov
     neutron_bagpipe_bgp: docker.io/openstackhelm/neutron:ocata-ubuntu_xenial
+    neutron_ironic_agent: docker.io/openstackhelm/neutron:ocata-ubuntu_xenial
     dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.1
     image_repo_sync: docker.io/docker:17.07.0
     tf_neutron_init: opencontrailnightly/contrail-openstack-neutron-init:ocata-master-latest
@@ -86,13 +88,15 @@ labels:
   server:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
+  ironic_agent:
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
   test:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
 
 network:
   # provide what type of network wiring will be used
-  # possible options: openvswitch, linuxbridge, sriov
   backend:
     - openvswitch
   # NOTE(Portdirect): Share network namespaces with the host,
@@ -303,6 +307,21 @@ dependencies:
           service: oslo_cache
         - endpoint: internal
           service: identity
+    ironic_agent:
+      jobs:
+        - neutron-db-sync
+        - neutron-ks-user
+        - neutron-ks-endpoints
+        - neutron-rabbit-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+        - endpoint: internal
+          service: oslo_messaging
+        - endpoint: internal
+          service: oslo_cache
+        - endpoint: internal
+          service: identity
     tests:
       services:
         - endpoint: internal
@@ -456,6 +475,9 @@ pod:
         neutron_sriov_agent:
           readOnlyRootFilesystem: true
           privileged: true
+    neutron_ironic_agent:
+      pod:
+        runAsUser: 42424
   affinity:
     anti:
       type:
@@ -510,6 +532,11 @@ pod:
       bagpipe_bgp:
         volumeMounts:
         volumes:
+    neutron_ironic_agent:
+      init_container: null
+      neutron_ironic_agent:
+        volumeMounts:
+        volumes:
     neutron_tests:
       init_container: null
       neutron_tests:
@@ -530,6 +557,7 @@ pod:
         volumes:
   replicas:
     server: 1
+    ironic_agent: 1
   lifecycle:
     upgrades:
       deployments:
@@ -569,6 +597,8 @@ pod:
         min_available: 0
     termination_grace_period:
       server:
+        timeout: 30
+      ironic_agent:
         timeout: 30
   resources:
     enabled: false
@@ -630,6 +660,13 @@ pod:
           memory: "1024Mi"
           cpu: "2000m"
     server:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    ironic_agent:
       requests:
         memory: "128Mi"
         cpu: "100m"
@@ -710,6 +747,7 @@ pod:
 
 conf:
   rally_tests:
+    force_project_purge: false
     run_tempest: false
     tests:
       NeutronNetworks.create_and_delete_networks:
@@ -1771,6 +1809,8 @@ conf:
       auth_version: v3
       endpoint_type: internal
       allow_reverse_dns_lookup: true
+    ironic:
+      endpoint_type: internal
     keystone_authtoken:
       memcache_security_strategy: ENCRYPT
       auth_type: password
@@ -2174,11 +2214,24 @@ endpoints:
         password: password
         user_domain_name: service
         project_domain_name: service
+      ironic:
+        region_name: RegionOne
+        project_name: service
+        username: ironic
+        password: password
+        user_domain_name: service
+        project_domain_name: service
       test:
         role: admin
         region_name: RegionOne
         username: neutron-test
         password: password
+        # NOTE: this project will be purged and reset if
+        # conf.rally_tests.force_project_purge is set to true
+        # which may be required upon test failure, but be aware that this will
+        # expunge all openstack objects, so if this is used a seperate project
+        # should be used for each helm test, and also it should be ensured
+        # that this project is not in use by other tenants
         project_name: test
         user_domain_name: service
         project_domain_name: service
@@ -2247,6 +2300,21 @@ endpoints:
       api:
         default: 9001
         public: 80
+  baremetal:
+    name: ironic
+    hosts:
+      default: ironic-api
+      public: ironic
+    host_fqdn_override:
+      default: null
+    path:
+      default: null
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 6385
+        public: 80
 
   #NOTE(tp6510): these endpoints allow for things like DNS lookups and apiserver access.
   # They are using to enable the Egress K8s network policy.
@@ -2281,6 +2349,7 @@ manifests:
   daemonset_sriov_agent: true
   daemonset_l2gw_agent: false
   daemonset_bagpipe_bgp: false
+  deployment_ironic_agent: false
   deployment_server: true
   ingress_server: true
   job_bootstrap: true

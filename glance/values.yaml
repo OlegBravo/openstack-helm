@@ -40,6 +40,7 @@ images:
   tags:
     test: docker.io/xrally/xrally-openstack:1.3.0
     glance_storage_init: docker.io/port/ceph-config-helper:v1.10.3
+    glance_metadefs_load: docker.io/openstackhelm/glance:ocata-ubuntu_xenial
     db_init: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
     glance_db_sync: docker.io/openstackhelm/glance:ocata-ubuntu_xenial
     db_drop: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
@@ -88,35 +89,7 @@ ceph_client:
 network_policy:
   glance:
     ingress:
-      - from:
-        - podSelector:
-            matchLabels:
-              application: glance
-        - podSelector:
-            matchLabels:
-              application: nova
-        - podSelector:
-            matchLabels:
-              application: horizon
-        - podSelector:
-            matchLabels:
-              application: ingress
-        - podSelector:
-            matchLabels:
-              application: heat
-        - podSelector:
-            matchLabels:
-              application: ironic
-        - podSelector:
-            matchLabels:
-              application: cinder
-        ports:
-        - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 9191
-        - protocol: TCP
-          port: 9292
+      - {}
     egress:
       - {}
 
@@ -431,8 +404,8 @@ conf:
     project_domain_name = {{ .Values.endpoints.identity.auth.glance.project_domain_name }}
     auth_version = 3
     # NOTE(portdirect): https://bugs.launchpad.net/glance-store/+bug/1620999
-    project_domain_id = ""
-    user_domain_id = ""
+    project_domain_id =
+    user_domain_id =
     {{- end -}}
   rabbitmq:
     #NOTE(rk760n): adding rmq policy to mirror messages from notification queues and set expiration time for the ones
@@ -562,6 +535,10 @@ dependencies:
     storage_init:
       jobs:
         - glance-ks-user
+      services: null
+    metadefs_load:
+      jobs:
+        - glance-db-sync
       services: null
     tests:
       services:
@@ -927,6 +904,13 @@ pod:
         limits:
           memory: "1024Mi"
           cpu: "2000m"
+      metadefs_load:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
       db_sync:
         requests:
           memory: "128Mi"
@@ -1015,6 +999,7 @@ manifests:
   job_ks_service: true
   job_ks_user: true
   job_storage_init: true
+  job_metadefs_load: true
   job_rabbit_init: true
   pdb_api: true
   pdb_registry: false

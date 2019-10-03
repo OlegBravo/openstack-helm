@@ -141,16 +141,10 @@ just set it along with nova_metadata_host.
 {{- end -}}
 
 {{- if empty $envAll.Values.conf.plugins.ml2_conf.ml2.mechanism_drivers -}}
-{{- $_ := set $envAll.Values "__mechanism_drivers" ( list "l2population" ) }}
-{{- if ( has "openvswitch" $envAll.Values.network.backend ) -}}
-{{ $__mechanism_drivers := append $envAll.Values.__mechanism_drivers "openvswitch" }}
-{{- $_ := set $envAll.Values "__mechanism_drivers" $__mechanism_drivers }}
+{{- if (contains "vxlan" $envAll.Values.conf.plugins.ml2_conf.ml2.tenant_network_types) -}}
+{{- $_ := set $envAll.Values "__mechanism_drivers" (append $envAll.Values.network.backend "l2population") -}}
 {{- end -}}
-{{- if ( has "linuxbridge" $envAll.Values.network.backend ) -}}
-{{ $__mechanism_drivers := append $envAll.Values.__mechanism_drivers "linuxbridge" }}
-{{- $_ := set $envAll.Values "__mechanism_drivers" $__mechanism_drivers }}
-{{- end -}}
-{{- $_ := set $envAll.Values.conf.plugins.ml2_conf.ml2 "mechanism_drivers" $envAll.Values.__mechanism_drivers -}}
+{{- $_ := set $envAll.Values.conf.plugins.ml2_conf.ml2 "mechanism_drivers" ($envAll.Values.__mechanism_drivers | default $envAll.Values.network.backend | uniq) -}}
 {{- end -}}
 
 {{- if empty .Values.conf.neutron.DEFAULT.bind_port -}}
@@ -198,6 +192,24 @@ just set it along with nova_metadata_host.
 {{- $_ := tuple "dns" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.neutron.designate "url" -}}
 {{- end -}}
 {{- end }}
+
+{{- if (has "baremetal" .Values.network.backend) -}}
+{{- if empty .Values.conf.neutron.ironic.project_name -}}
+{{- $_ := set .Values.conf.neutron.ironic "project_name" .Values.endpoints.identity.auth.ironic.project_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.ironic.project_domain_name -}}
+{{- $_ := set .Values.conf.neutron.ironic "project_domain_name" .Values.endpoints.identity.auth.ironic.project_domain_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.ironic.user_domain_name -}}
+{{- $_ := set .Values.conf.neutron.ironic "user_domain_name" .Values.endpoints.identity.auth.ironic.user_domain_name -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.ironic.username -}}
+{{- $_ := set .Values.conf.neutron.ironic "username" .Values.endpoints.identity.auth.ironic.username -}}
+{{- end -}}
+{{- if empty .Values.conf.neutron.ironic.password -}}
+{{- $_ := set .Values.conf.neutron.ironic "password" .Values.endpoints.identity.auth.ironic.password -}}
+{{- end -}}
+{{- end -}}
 
 {{- if ( has "tungstenfabric" $envAll.Values.network.backend ) -}}
 {{- if empty $envAll.Values.conf.plugins.tungstenfabric.KEYSTONE.auth_url -}}
