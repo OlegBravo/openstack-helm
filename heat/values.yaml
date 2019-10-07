@@ -58,6 +58,7 @@ images:
     heat_purge_deleted: docker.io/openstackhelm/heat:ocata-ubuntu_xenial
     dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.1
     image_repo_sync: docker.io/docker:17.07.0
+    opencontrail_heat_init:
   pull_policy: "IfNotPresent"
   local_registry:
     active: false
@@ -470,6 +471,7 @@ conf:
       endpoint_type: internalURL
     oslo_messaging_notifications:
       driver: messagingv2
+    clients_contrail:
     oslo_middleware:
       enable_proxy_headers_parsing: true
     oslo_messaging_rabbit:
