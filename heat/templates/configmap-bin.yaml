@@ -64,5 +64,5 @@ data:
   rabbit-init.sh: |
 {{- include "helm-toolkit.scripts.rabbit_init" . | indent 4 }}
   tf-plugin.pth: |
-  /opt/plugin/site-packages
+    /opt/plugin/site-packages
 {{- end }}
